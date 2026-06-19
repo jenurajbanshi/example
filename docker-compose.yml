@@ -1,0 +1,27 @@
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+
+  server:
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOST: 0.0.0.0
+      CORS_ORIGIN: "*"
+      REDIS_URL: redis://redis:6379
+      TRUST_PROXY: "true"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - redis
+
+volumes:
+  redis-data:

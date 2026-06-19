@@ -1,0 +1,9 @@
+[build]
+builder = "RAILPACK"
+buildCommand = "npm run build:server"
+
+[deploy]
+startCommand = "npm run start:server"
+healthcheckPath = "/health"
+healthcheckTimeout = 100
+restartPolicyType = "on_failure"
