@@ -34,7 +34,7 @@ type GameUpdatedPayload = {
 };
 
 const SERVER_URL = (process.env.EXPO_PUBLIC_SERVER_URL?.trim() || "http://localhost:3000").replace(/\/$/, "");
-const TILE_GAP = 5;
+const TILE_GAP = 10;
 
 export default function App(): React.ReactElement {
   const [deviceId, setDeviceId] = useState<string>();
@@ -247,10 +247,7 @@ export default function App(): React.ReactElement {
                 {gameState.players.map((player) => (
                   <View key={player.deviceId} style={styles.playerPill}>
                     <View style={[styles.smallToken, { backgroundColor: player.color }]} />
-                    <Text style={styles.playerText}>
-                      {player.displayName} ${player.cash}
-                      {player.bankrupt ? " (bankrupt)" : ""}
-                    </Text>
+                    <Text style={styles.playerText}>{`${player.displayName} $${player.cash}${player.bankrupt ? " (bankrupt)" : ""}`}</Text>
                   </View>
                 ))}
               </View>
@@ -482,7 +479,7 @@ function getAngle(index: number, count: number): number {
 
 function getCircularTileSize(count: number, radius: number): number {
   const maxDiameter = 2 * radius * Math.sin(Math.PI / count) - TILE_GAP;
-  return Math.floor(Math.max(30, Math.min(42, maxDiameter)));
+  return Math.floor(Math.max(26, Math.min(32, maxDiameter)));
 }
 
 function tileGlyph(tile: BoardTile): string {
