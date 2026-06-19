@@ -106,7 +106,7 @@ Set variables:
 EXPO_PUBLIC_SERVER_URL=https://<server-domain>
 ```
 
-Deploy the web service and generate a public domain.
+Deploy the web service and generate a public domain. If `EXPO_PUBLIC_SERVER_URL` is not set, the web build will also derive it from `SERVER_PUBLIC_URL`, `RAILWAY_SERVER_PUBLIC_URL`, `SERVER_PUBLIC_DOMAIN`, or `RAILWAY_SERVER_PUBLIC_DOMAIN` when one of those variables is available.
 
 ## 5. Lock down CORS manually
 
@@ -149,7 +149,7 @@ npm run railway:smoke -- https://<server-domain> https://<web-domain>
 The smoke test verifies the server `/health` endpoint, confirms Redis-backed storage, and confirms the web app returns HTML.
 
 1. Open the web Railway domain.
-2. Confirm the Server URL field is prefilled with the deployed server URL.
+2. Confirm the app shows as online without asking for a Server URL.
 3. Create a game.
 4. Open the same web URL in a second browser or private window.
 5. Join using the game code.
