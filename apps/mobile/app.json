@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "Orbital Estates",
+    "slug": "orbital-estates",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.orbitalestates.mobile"
+    },
+    "android": {
+      "package": "com.orbitalestates.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#0f172a"
+      }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "local-development"
+      }
+    }
+  }
+}
