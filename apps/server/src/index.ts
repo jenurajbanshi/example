@@ -3,7 +3,7 @@ import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
 import { createAdapter } from "@socket.io/redis-adapter";
 import Fastify from "fastify";
-import Redis from "ioredis";
+import { Redis } from "ioredis";
 import { Server } from "socket.io";
 import { loadConfig, parseCorsOrigin } from "./config.js";
 import { registerRealtime } from "./realtime.js";

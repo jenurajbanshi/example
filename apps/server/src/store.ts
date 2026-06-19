@@ -1,5 +1,5 @@
 import type { GameState } from "@orbital-estates/shared";
-import Redis from "ioredis";
+import { Redis } from "ioredis";
 
 export type GameStore = {
   create(game: GameState): Promise<boolean>;

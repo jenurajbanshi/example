@@ -81,11 +81,15 @@ export default function App(): React.ReactElement {
     () => gameState?.players.find((player) => player.deviceId === deviceId),
     [deviceId, gameState]
   );
-  const currentTurnPlayer = useMemo(
-    () => gameState?.players.find((player) => player.deviceId === gameState.currentTurnDeviceId),
-    [gameState]
-  );
-  const pendingPurchase = gameState?.pendingAction?.deviceId === deviceId ? gameState.pendingAction : undefined;
+  const currentTurnPlayer = useMemo(() => {
+    if (!gameState) {
+      return undefined;
+    }
+
+    return gameState.players.find((player) => player.deviceId === gameState.currentTurnDeviceId);
+  }, [gameState]);
+  const pendingPurchase =
+    gameState && gameState.pendingAction?.deviceId === deviceId ? gameState.pendingAction : undefined;
   const canStart =
     Boolean(gameState && deviceId && gameState.status === "lobby" && gameState.hostDeviceId === deviceId) &&
     (gameState?.players.length ?? 0) >= 2;

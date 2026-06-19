@@ -269,8 +269,8 @@ export function purchaseProperty(state: GameState, deviceId: DeviceId, buy: bool
     throw new Error("Only the current player can resolve this purchase.");
   }
 
+  const action = state.pendingAction;
   const next = cloneState(state);
-  const action = next.pendingAction;
   const player = findPlayer(next, deviceId);
   const tile = next.board[action.tileId];
   const events: string[] = [];
