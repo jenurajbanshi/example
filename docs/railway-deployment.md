@@ -15,6 +15,28 @@ Keep both app services pointed at the monorepo root (`/`) so npm workspaces and 
 3. Add a GitHub repo service for the server.
 4. Add a second GitHub repo service for the web client.
 
+### Automated Redis setup
+
+After linking the repo to your Railway project with `railway login` and `railway link`, Redis creation and server variable wiring can be automated:
+
+```bash
+npm run railway:setup:redis -- "Orbital Estates Server"
+```
+
+The script runs `railway add --database redis` and sets the server variables from the next section, including `REDIS_URL=${{Redis.REDIS_URL}}`.
+
+If Redis already exists, skip creation and only wire variables:
+
+```bash
+RAILWAY_SKIP_REDIS_CREATE=true npm run railway:setup:redis -- "Orbital Estates Server"
+```
+
+If the Redis service is not named `Redis`, pass its exact Railway service name through `RAILWAY_REDIS_SERVICE`:
+
+```bash
+RAILWAY_REDIS_SERVICE="Orbital Redis" RAILWAY_SKIP_REDIS_CREATE=true npm run railway:setup:redis -- "Orbital Estates Server"
+```
+
 ## 2. Configure the server service
 
 In the server service settings:
