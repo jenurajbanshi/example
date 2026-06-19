@@ -754,10 +754,7 @@ const styles = StyleSheet.create({
     borderColor: "#263244",
     borderWidth: 1,
     justifyContent: "center",
-    position: "absolute",
-    shadowColor: "#000",
-    shadowOpacity: 0.18,
-    shadowRadius: 18
+    position: "absolute"
   },
   boardCenterTitle: {
     color: "#f7fafc",
@@ -775,10 +772,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     justifyContent: "center",
     padding: 3,
-    position: "absolute",
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 8
+    position: "absolute"
   },
   startTile: {
     backgroundColor: "#0d3b4a"
@@ -808,10 +802,7 @@ const styles = StyleSheet.create({
   playerToken: {
     borderColor: "#f7fafc",
     borderWidth: 2,
-    position: "absolute",
-    shadowColor: "#000",
-    shadowOpacity: 0.22,
-    shadowRadius: 5
+    position: "absolute"
   },
   actionsRow: {
     flexDirection: "row",
