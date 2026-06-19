@@ -12,8 +12,8 @@
         "import": "./src/index.ts"
       },
       "react-native": {
-        "types": "./src/index.ts",
-        "import": "./src/index.ts"
+        "types": "./src/index.react-native.ts",
+        "import": "./src/index.react-native.ts"
       },
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"

@@ -11,6 +11,10 @@
     "dev:server": "npm run dev -w @orbital-estates/server",
     "dev:mobile": "npm run start -w @orbital-estates/mobile",
     "build": "npm run build -w @orbital-estates/shared && npm run build -w @orbital-estates/server",
+    "build:server": "npm run build -w @orbital-estates/shared && npm run build -w @orbital-estates/server",
+    "start:server": "npm run start -w @orbital-estates/server",
+    "build:web": "npm run build:web -w @orbital-estates/mobile",
+    "start:web": "serve -s apps/mobile/dist -l tcp://0.0.0.0:${PORT:-3000}",
     "test": "npm run test -w @orbital-estates/shared",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },
@@ -21,5 +25,8 @@
     "@types/node": "latest",
     "typescript": "latest",
     "vitest": "latest"
+  },
+  "dependencies": {
+    "serve": "^14.2.6"
   }
 }

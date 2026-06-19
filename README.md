@@ -6,12 +6,12 @@ Players do not create accounts. The Expo React Native client creates a random de
 
 ## Tech stack
 
-- **Mobile client:** Expo + React Native + TypeScript
+- **Mobile/web client:** Expo + React Native + TypeScript
 - **Realtime server:** Node.js 22 + TypeScript + Fastify + Socket.IO
 - **Shared game rules:** TypeScript workspace package consumed by both client and server
 - **Scale-out coordination:** Redis for Socket.IO pub/sub and room state storage when `REDIS_URL` is set
 - **Security middleware:** Helmet, CORS configuration, rate limiting, and Zod payload validation
-- **Deployment:** Dockerfile for the server and Docker Compose with Redis
+- **Deployment:** Railway configs for server + web, Dockerfile for the server, and Docker Compose with Redis
 
 ## Repository layout
 
@@ -23,6 +23,7 @@ packages/
   shared/   Circular board, player, tile, turn, rent, and purchase rules
 docs/
   architecture.md
+  railway-deployment.md
 ```
 
 ## Local development
@@ -35,6 +36,17 @@ npm run dev:mobile
 ```
 
 The mobile app defaults to `http://localhost:3000`. On a physical device, enter the LAN URL for the server in the app's Server URL field.
+
+## Railway deployment
+
+This repo includes two Railway config files:
+
+- `railway.server.toml` for the Fastify + Socket.IO server
+- `railway.web.toml` for the Expo web client
+
+Create two GitHub-backed Railway services from this repository, keep both root directories set to `/`, and point each service at its config file path. Add a Railway Redis service and set the server `REDIS_URL` to the Redis connection variable.
+
+See [docs/railway-deployment.md](docs/railway-deployment.md) for the full step-by-step setup.
 
 ## Tests and checks
 

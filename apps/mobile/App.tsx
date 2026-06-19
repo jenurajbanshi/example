@@ -32,7 +32,7 @@ type GameUpdatedPayload = {
   events: GameEvent[];
 };
 
-const DEFAULT_SERVER_URL = "http://localhost:3000";
+const DEFAULT_SERVER_URL = process.env.EXPO_PUBLIC_SERVER_URL ?? "http://localhost:3000";
 
 export default function App(): React.ReactElement {
   const [deviceId, setDeviceId] = useState<string>();
