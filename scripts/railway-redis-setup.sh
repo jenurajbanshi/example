@@ -13,6 +13,8 @@ Environment variables:
                               Default: Redis
   RAILWAY_SKIP_REDIS_CREATE   Set to true when Redis already exists.
                               Default: false
+  RAILWAY_SKIP_DEPLOYS        Set variables without triggering Railway deploys.
+                              Default: false
   CORS_ORIGIN                 Initial server CORS origin.
                               Default: *
 
@@ -40,8 +42,17 @@ fi
 server_service="${1:-${RAILWAY_SERVER_SERVICE:-Orbital Estates Server}}"
 redis_service="${RAILWAY_REDIS_SERVICE:-Redis}"
 skip_redis_create="${RAILWAY_SKIP_REDIS_CREATE:-false}"
+skip_deploys="${RAILWAY_SKIP_DEPLOYS:-false}"
 cors_origin="${CORS_ORIGIN:-*}"
 redis_url_ref="\${{${redis_service}.REDIS_URL}}"
+
+set_server_variable() {
+  if [[ "$skip_deploys" == "true" ]]; then
+    railway variable set "$1" --service "$server_service" --skip-deploys
+  else
+    railway variable set "$1" --service "$server_service"
+  fi
+}
 
 if [[ "$skip_redis_create" == "true" ]]; then
   echo "Skipping Redis creation; using existing Railway service: $redis_service"
@@ -51,12 +62,12 @@ else
 fi
 
 echo "Configuring server service variables for: $server_service"
-railway variable set NODE_ENV=production --service "$server_service"
-railway variable set HOST=0.0.0.0 --service "$server_service"
-railway variable set TRUST_PROXY=true --service "$server_service"
-railway variable set REDIS_URL="$redis_url_ref" --service "$server_service"
-railway variable set REDIS_KEY_PREFIX=orbital-estates --service "$server_service"
-railway variable set GAME_TTL_SECONDS=86400 --service "$server_service"
-railway variable set CORS_ORIGIN="$cors_origin" --service "$server_service"
+set_server_variable NODE_ENV=production
+set_server_variable HOST=0.0.0.0
+set_server_variable TRUST_PROXY=true
+set_server_variable "REDIS_URL=$redis_url_ref"
+set_server_variable REDIS_KEY_PREFIX=orbital-estates
+set_server_variable GAME_TTL_SECONDS=86400
+set_server_variable "CORS_ORIGIN=$cors_origin"
 
 echo "Redis is wired. Redeploy the server, then check /health for storage=redis."

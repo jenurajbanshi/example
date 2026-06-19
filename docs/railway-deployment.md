@@ -11,24 +11,51 @@ Keep both app services pointed at the monorepo root (`/`) so npm workspaces and 
 ## 1. Create the Railway project
 
 1. Create a new Railway project.
-2. Add a Redis database service.
-3. Add a GitHub repo service for the server.
-4. Add a second GitHub repo service for the web client.
+2. Add a GitHub repo service for the server.
+3. Add a second GitHub repo service for the web client.
+4. Keep both GitHub services pointed at the repo root (`/`), then set their config file paths:
+   - Server: `/railway.server.toml`
+   - Web: `/railway.web.toml`
 
-### Automated Redis setup
+## 2. Automated setup
 
-After linking the repo to your Railway project with `railway login` and `railway link`, Redis creation and server variable wiring can be automated:
+After linking the repo to your Railway project with `railway login` and `railway link`, run:
 
 ```bash
-npm run railway:setup:redis -- "Orbital Estates Server"
+npm run railway:bootstrap -- "Orbital Estates Server" "Orbital Estates Web"
 ```
 
-The script runs `railway add --database redis` and sets the server variables from the next section, including `REDIS_URL=${{Redis.REDIS_URL}}`.
+The bootstrap script:
+
+1. Adds a Railway Redis database unless `RAILWAY_SKIP_REDIS_CREATE=true` is set.
+2. Wires the server Redis and production variables.
+3. Generates Railway public domains for the server and web services.
+4. Sets the web `EXPO_PUBLIC_SERVER_URL` to the server public domain.
+5. Sets the server `CORS_ORIGIN` to the web public domain.
+6. Redeploys the web and server services.
 
 If Redis already exists, skip creation and only wire variables:
 
 ```bash
-RAILWAY_SKIP_REDIS_CREATE=true npm run railway:setup:redis -- "Orbital Estates Server"
+RAILWAY_SKIP_REDIS_CREATE=true npm run railway:bootstrap -- "Orbital Estates Server" "Orbital Estates Web"
+```
+
+If you use custom domains, skip Railway domain generation and pass the final URLs:
+
+```bash
+SERVER_PUBLIC_URL=https://api.example.com WEB_PUBLIC_URL=https://game.example.com RAILWAY_GENERATE_DOMAINS=false npm run railway:bootstrap -- "Orbital Estates Server" "Orbital Estates Web"
+```
+
+To sync only domain-related variables later:
+
+```bash
+npm run railway:sync:domains -- "Orbital Estates Server" "Orbital Estates Web"
+```
+
+To run only Redis setup:
+
+```bash
+npm run railway:setup:redis -- "Orbital Estates Server"
 ```
 
 If the Redis service is not named `Redis`, pass its exact Railway service name through `RAILWAY_REDIS_SERVICE`:
@@ -37,7 +64,7 @@ If the Redis service is not named `Redis`, pass its exact Railway service name t
 RAILWAY_REDIS_SERVICE="Orbital Redis" RAILWAY_SKIP_REDIS_CREATE=true npm run railway:setup:redis -- "Orbital Estates Server"
 ```
 
-## 2. Configure the server service
+## 3. Configure the server service manually
 
 In the server service settings:
 
@@ -66,7 +93,7 @@ https://<server-domain>/health
 
 The response should report `"storage": "redis"` when `REDIS_URL` is set.
 
-## 3. Configure the web service
+## 4. Configure the web service manually
 
 In the web service settings:
 
@@ -81,7 +108,7 @@ EXPO_PUBLIC_SERVER_URL=https://<server-domain>
 
 Deploy the web service and generate a public domain.
 
-## 4. Lock down CORS
+## 5. Lock down CORS manually
 
 After the web domain exists, update the server variable:
 
@@ -93,7 +120,7 @@ Redeploy the server.
 
 For local testing or early smoke tests, `CORS_ORIGIN=*` is acceptable. Production should use the exact web origin.
 
-## 5. Build commands used by Railway
+## 6. Build commands used by Railway
 
 Server service:
 
@@ -111,7 +138,15 @@ npm run start:web
 
 The web build outputs to `apps/mobile/dist` and is served with `serve` in SPA mode on Railway's `$PORT`.
 
-## 6. Smoke test
+## 7. Smoke test
+
+After deployment, run:
+
+```bash
+npm run railway:smoke -- https://<server-domain> https://<web-domain>
+```
+
+The smoke test verifies the server `/health` endpoint, confirms Redis-backed storage, and confirms the web app returns HTML.
 
 1. Open the web Railway domain.
 2. Confirm the Server URL field is prefilled with the deployed server URL.
