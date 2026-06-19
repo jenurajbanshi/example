@@ -15,6 +15,10 @@
     "start:server": "npm run start -w @orbital-estates/server",
     "build:web": "npm run build:web -w @orbital-estates/mobile",
     "start:web": "serve -s apps/mobile/dist -l tcp://0.0.0.0:${PORT:-3000}",
+    "railway:setup:redis": "bash scripts/railway-redis-setup.sh",
+    "railway:sync:domains": "bash scripts/railway-domain-sync.sh",
+    "railway:bootstrap": "bash scripts/railway-bootstrap.sh",
+    "railway:smoke": "node scripts/railway-smoke.mjs",
     "test": "npm run test -w @orbital-estates/shared",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },
