@@ -546,8 +546,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#070b12"
   },
   container: {
+    alignSelf: "center",
+    maxWidth: 960,
     padding: 18,
-    gap: 16
+    gap: 16,
+    width: "100%"
   },
   loading: {
     flex: 1,
