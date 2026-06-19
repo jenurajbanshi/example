@@ -8,7 +8,8 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  View
+  View,
+  useWindowDimensions
 } from "react-native";
 import { io, type Socket } from "socket.io-client";
 import {
@@ -32,12 +33,12 @@ type GameUpdatedPayload = {
   events: GameEvent[];
 };
 
-const DEFAULT_SERVER_URL = process.env.EXPO_PUBLIC_SERVER_URL ?? "http://localhost:3000";
+const SERVER_URL = (process.env.EXPO_PUBLIC_SERVER_URL?.trim() || "http://localhost:3000").replace(/\/$/, "");
+const TILE_GAP = 5;
 
 export default function App(): React.ReactElement {
   const [deviceId, setDeviceId] = useState<string>();
   const [displayName, setDisplayName] = useState("Captain");
-  const [serverUrl, setServerUrl] = useState(DEFAULT_SERVER_URL);
   const [gameCode, setGameCode] = useState("");
   const [gameState, setGameState] = useState<GameState>();
   const [eventFeed, setEventFeed] = useState<GameEvent[]>([]);
@@ -55,7 +56,7 @@ export default function App(): React.ReactElement {
       return undefined;
     }
 
-    const client = io(serverUrl, {
+    const client = io(SERVER_URL, {
       transports: ["websocket", "polling"],
       reconnection: true
     });
@@ -75,7 +76,7 @@ export default function App(): React.ReactElement {
       client.disconnect();
       setConnected(false);
     };
-  }, [deviceId, serverUrl]);
+  }, [deviceId]);
 
   const currentPlayer = useMemo(
     () => gameState?.players.find((player) => player.deviceId === deviceId),
@@ -210,20 +211,19 @@ export default function App(): React.ReactElement {
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
         {!gameState ? (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Play without an account</Text>
+          <View style={styles.heroPanel}>
+            <Text style={styles.sectionTitle}>Play without an account</Text>
             <Text style={styles.bodyText}>
               This app stores a private device ID locally and uses it to rejoin rooms. No email, password, or profile is
               required.
             </Text>
+            <View style={styles.serverNote}>
+              <View style={[styles.statusDot, connected ? styles.connectedDot : styles.disconnectedDot]} />
+              <Text style={styles.serverNoteText}>
+                {connected ? "Connected" : "Connecting"} to the configured game server.
+              </Text>
+            </View>
             <LabeledInput label="Display name" value={displayName} onChangeText={setDisplayName} />
-            <LabeledInput
-              label="Server URL"
-              value={serverUrl}
-              onChangeText={setServerUrl}
-              autoCapitalize="none"
-              keyboardType="url"
-            />
             <PrimaryButton disabled={busy || !connected || !displayName.trim()} label="Create game" onPress={createRoom} />
             <View style={styles.divider} />
             <LabeledInput
@@ -236,7 +236,7 @@ export default function App(): React.ReactElement {
           </View>
         ) : (
           <>
-            <View style={styles.card}>
+            <View style={styles.gameHeader}>
               <Text style={styles.eyebrow}>Game code</Text>
               <Text style={styles.gameCode}>{gameState.id}</Text>
               <Text style={styles.bodyText}>
@@ -258,8 +258,8 @@ export default function App(): React.ReactElement {
 
             <CircularBoard state={gameState} />
 
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Your turn controls</Text>
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Your turn controls</Text>
               {currentPlayer ? (
                 <Text style={styles.bodyText}>
                   You are on {gameState.board[currentPlayer.position].name} with ${currentPlayer.cash}.
@@ -278,8 +278,8 @@ export default function App(): React.ReactElement {
               )}
             </View>
 
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Event log</Text>
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Event log</Text>
               {eventFeed.length === 0 ? (
                 <Text style={styles.bodyText}>Game events will appear here.</Text>
               ) : (
@@ -298,21 +298,36 @@ export default function App(): React.ReactElement {
 }
 
 function CircularBoard({ state }: { state: GameState }): React.ReactElement {
-  const boardSize = 340;
+  const { width } = useWindowDimensions();
+  const boardSize = Math.min(Math.max(Math.floor(width - 36), 320), 390);
   const center = boardSize / 2;
-  const tileRadius = 138;
-  const tileSize = 50;
+  const orbitRadius = boardSize * 0.42;
+  const tileSize = getCircularTileSize(state.board.length, orbitRadius);
+  const centerSize = boardSize * 0.34;
+  const centerOffset = (boardSize - centerSize) / 2;
+  const tokenSize = 12;
 
   return (
-    <View style={styles.boardCard}>
+    <View style={styles.boardWrap}>
       <View style={[styles.board, { width: boardSize, height: boardSize, borderRadius: boardSize / 2 }]}>
-        <View style={styles.boardCenter}>
+        <View
+          style={[
+            styles.boardCenter,
+            {
+              borderRadius: centerSize / 2,
+              height: centerSize,
+              left: centerOffset,
+              top: centerOffset,
+              width: centerSize
+            }
+          ]}
+        >
           <Text style={styles.boardCenterTitle}>ORBIT</Text>
           <Text style={styles.boardCenterText}>{state.status}</Text>
         </View>
         {state.board.map((tile, index) => {
           const owner = getOwner(state, tile.id);
-          const position = getPolarPosition(index, state.board.length, tileRadius, center, tileSize);
+          const position = getPolarPosition(index, state.board.length, orbitRadius, center, tileSize);
 
           return (
             <View
@@ -323,13 +338,16 @@ function CircularBoard({ state }: { state: GameState }): React.ReactElement {
                 {
                   left: position.left,
                   top: position.top,
-                  borderColor: owner?.color ?? "#334155"
+                  borderColor: owner?.color ?? getTileAccent(tile),
+                  borderRadius: tileSize / 2,
+                  height: tileSize,
+                  width: tileSize
                 }
               ]}
             >
-              <Text style={styles.tileNumber}>{tile.id}</Text>
-              <Text style={styles.tileName} numberOfLines={2}>
-                {shortTileName(tile.name)}
+              <Text style={[styles.tileGlyph, { fontSize: tileSize > 36 ? 13 : 11 }]}>{tileGlyph(tile)}</Text>
+              <Text style={styles.tileName} numberOfLines={1}>
+                {tileLabel(tile)}
               </Text>
             </View>
           );
@@ -337,12 +355,14 @@ function CircularBoard({ state }: { state: GameState }): React.ReactElement {
         {state.players.map((player) => {
           const sameSpace = state.players.filter((candidate) => candidate.position === player.position);
           const stackIndex = sameSpace.findIndex((candidate) => candidate.deviceId === player.deviceId);
-          const position = getPolarPosition(
+          const position = getStackedTokenPosition(
             player.position,
             state.board.length,
-            tileRadius - 34 - stackIndex * 15,
+            orbitRadius - tileSize / 2 - 13,
             center,
-            18
+            tokenSize,
+            stackIndex,
+            sameSpace.length
           );
 
           return (
@@ -354,7 +374,10 @@ function CircularBoard({ state }: { state: GameState }): React.ReactElement {
                   left: position.left,
                   top: position.top,
                   backgroundColor: player.color,
-                  opacity: player.bankrupt ? 0.35 : 1
+                  borderRadius: tokenSize / 2,
+                  height: tokenSize,
+                  opacity: player.bankrupt ? 0.35 : 1,
+                  width: tokenSize
                 }
               ]}
             />
@@ -426,7 +449,7 @@ function SecondaryButton({
 }
 
 function getPolarPosition(index: number, count: number, radius: number, center: number, size: number): { left: number; top: number } {
-  const angle = (index / count) * Math.PI * 2 - Math.PI / 2;
+  const angle = getAngle(index, count);
 
   return {
     left: center + radius * Math.cos(angle) - size / 2,
@@ -434,11 +457,75 @@ function getPolarPosition(index: number, count: number, radius: number, center: 
   };
 }
 
-function shortTileName(name: string): string {
-  return name
+function getStackedTokenPosition(
+  index: number,
+  count: number,
+  radius: number,
+  center: number,
+  size: number,
+  stackIndex: number,
+  stackCount: number
+): { left: number; top: number } {
+  const angle = getAngle(index, count);
+  const tangentAngle = angle + Math.PI / 2;
+  const tangentOffset = (stackIndex - (stackCount - 1) / 2) * (size + 2);
+
+  return {
+    left: center + radius * Math.cos(angle) + tangentOffset * Math.cos(tangentAngle) - size / 2,
+    top: center + radius * Math.sin(angle) + tangentOffset * Math.sin(tangentAngle) - size / 2
+  };
+}
+
+function getAngle(index: number, count: number): number {
+  return (index / count) * Math.PI * 2 - Math.PI / 2;
+}
+
+function getCircularTileSize(count: number, radius: number): number {
+  const maxDiameter = 2 * radius * Math.sin(Math.PI / count) - TILE_GAP;
+  return Math.floor(Math.max(30, Math.min(42, maxDiameter)));
+}
+
+function tileGlyph(tile: BoardTile): string {
+  switch (tile.kind) {
+    case "start":
+      return "GO";
+    case "property":
+      return "$";
+    case "tax":
+      return "%";
+    case "bonus":
+      return "+";
+    case "chance":
+      return "?";
+  }
+}
+
+function tileLabel(tile: BoardTile): string {
+  if (tile.kind !== "property") {
+    return tile.kind.toUpperCase().slice(0, 3);
+  }
+
+  return tile.name
     .split(" ")
-    .map((part) => part.slice(0, 4))
-    .join(" ");
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 3)
+    .toUpperCase();
+}
+
+function getTileAccent(tile: BoardTile): string {
+  switch (tile.kind) {
+    case "start":
+      return "#38bdf8";
+    case "property":
+      return "#64748b";
+    case "tax":
+      return "#fb7185";
+    case "bonus":
+      return "#34d399";
+    case "chance":
+      return "#a78bfa";
+  }
 }
 
 function tileStyle(tile: BoardTile): object {
@@ -459,7 +546,7 @@ function tileStyle(tile: BoardTile): object {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#020617"
+    backgroundColor: "#070b12"
   },
   container: {
     padding: 18,
@@ -472,7 +559,7 @@ const styles = StyleSheet.create({
     gap: 12
   },
   loadingText: {
-    color: "#cbd5e1"
+    color: "#d6dee9"
   },
   header: {
     flexDirection: "row",
@@ -481,30 +568,33 @@ const styles = StyleSheet.create({
     gap: 12
   },
   eyebrow: {
-    color: "#38bdf8",
+    color: "#76e4f7",
     fontSize: 12,
     fontWeight: "700",
     letterSpacing: 1,
     textTransform: "uppercase"
   },
   title: {
-    color: "#f8fafc",
+    color: "#f7fafc",
     fontSize: 34,
     fontWeight: "900"
   },
   connectionBadge: {
     borderRadius: 999,
+    borderWidth: 1,
     paddingHorizontal: 12,
     paddingVertical: 8
   },
   connected: {
-    backgroundColor: "#064e3b"
+    backgroundColor: "rgba(20, 83, 45, 0.45)",
+    borderColor: "#22c55e"
   },
   disconnected: {
-    backgroundColor: "#7f1d1d"
+    backgroundColor: "rgba(127, 29, 29, 0.45)",
+    borderColor: "#f87171"
   },
   connectionText: {
-    color: "#f8fafc",
+    color: "#f7fafc",
     fontWeight: "800"
   },
   error: {
@@ -513,58 +603,91 @@ const styles = StyleSheet.create({
     color: "#fee2e2",
     padding: 12
   },
-  card: {
-    backgroundColor: "#0f172a",
-    borderColor: "#1e293b",
-    borderRadius: 20,
+  heroPanel: {
+    backgroundColor: "#101723",
+    borderColor: "#263244",
+    borderRadius: 28,
     borderWidth: 1,
     gap: 12,
-    padding: 16
+    padding: 18
   },
-  cardTitle: {
-    color: "#f8fafc",
+  section: {
+    borderColor: "#223044",
+    borderTopWidth: 1,
+    gap: 12,
+    paddingTop: 16
+  },
+  sectionTitle: {
+    color: "#f7fafc",
     fontSize: 20,
     fontWeight: "800"
   },
   bodyText: {
-    color: "#cbd5e1",
+    color: "#b8c2d4",
     lineHeight: 20
+  },
+  serverNote: {
+    alignItems: "center",
+    backgroundColor: "rgba(15, 23, 42, 0.72)",
+    borderColor: "#223044",
+    borderRadius: 999,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10
+  },
+  statusDot: {
+    borderRadius: 4,
+    height: 8,
+    width: 8
+  },
+  connectedDot: {
+    backgroundColor: "#22c55e"
+  },
+  disconnectedDot: {
+    backgroundColor: "#f87171"
+  },
+  serverNoteText: {
+    color: "#d6dee9",
+    flex: 1,
+    fontWeight: "700"
   },
   inputGroup: {
     gap: 6
   },
   inputLabel: {
-    color: "#94a3b8",
+    color: "#9aa8ba",
     fontSize: 12,
     fontWeight: "700",
     textTransform: "uppercase"
   },
   input: {
-    backgroundColor: "#020617",
-    borderColor: "#334155",
-    borderRadius: 12,
+    backgroundColor: "#0a101a",
+    borderColor: "#29364a",
+    borderRadius: 16,
     borderWidth: 1,
-    color: "#f8fafc",
+    color: "#f7fafc",
     paddingHorizontal: 14,
     paddingVertical: 12
   },
   divider: {
-    backgroundColor: "#1e293b",
+    backgroundColor: "#223044",
     height: 1
   },
   button: {
     alignItems: "center",
-    borderRadius: 14,
+    borderRadius: 999,
     flex: 1,
     paddingHorizontal: 14,
     paddingVertical: 12
   },
   primaryButton: {
-    backgroundColor: "#38bdf8"
+    backgroundColor: "#67e8f9"
   },
   secondaryButton: {
-    backgroundColor: "#1e293b",
-    borderColor: "#334155",
+    backgroundColor: "#111827",
+    borderColor: "#29364a",
     borderWidth: 1
   },
   disabledButton: {
@@ -575,11 +698,15 @@ const styles = StyleSheet.create({
     fontWeight: "900"
   },
   secondaryButtonText: {
-    color: "#e2e8f0",
+    color: "#e5edf7",
     fontWeight: "800"
   },
+  gameHeader: {
+    gap: 12,
+    paddingBottom: 4
+  },
   gameCode: {
-    color: "#f8fafc",
+    color: "#f7fafc",
     fontSize: 42,
     fontWeight: "900",
     letterSpacing: 6
@@ -591,105 +718,100 @@ const styles = StyleSheet.create({
   },
   playerPill: {
     alignItems: "center",
-    backgroundColor: "#020617",
+    backgroundColor: "#101723",
+    borderColor: "#223044",
     borderRadius: 999,
+    borderWidth: 1,
     flexDirection: "row",
     gap: 8,
     paddingHorizontal: 10,
     paddingVertical: 8
   },
   smallToken: {
-    borderColor: "#f8fafc",
+    borderColor: "#f7fafc",
     borderRadius: 6,
     borderWidth: 1,
     height: 12,
     width: 12
   },
   playerText: {
-    color: "#cbd5e1",
+    color: "#d6dee9",
     fontWeight: "700"
   },
-  boardCard: {
+  boardWrap: {
     alignItems: "center",
-    backgroundColor: "#0f172a",
-    borderColor: "#1e293b",
-    borderRadius: 24,
-    borderWidth: 1,
-    paddingVertical: 18
+    paddingVertical: 8
   },
   board: {
-    backgroundColor: "#020617",
-    borderColor: "#1e293b",
+    backgroundColor: "#09111f",
+    borderColor: "#223044",
     borderWidth: 2,
     position: "relative"
   },
   boardCenter: {
     alignItems: "center",
-    backgroundColor: "#0f172a",
-    borderColor: "#1e293b",
-    borderRadius: 72,
+    backgroundColor: "#101723",
+    borderColor: "#263244",
     borderWidth: 1,
-    height: 144,
     justifyContent: "center",
-    left: 98,
     position: "absolute",
-    top: 98,
-    width: 144
+    shadowColor: "#000",
+    shadowOpacity: 0.18,
+    shadowRadius: 18
   },
   boardCenterTitle: {
-    color: "#f8fafc",
-    fontSize: 22,
+    color: "#f7fafc",
+    fontSize: 20,
     fontWeight: "900",
     letterSpacing: 3
   },
   boardCenterText: {
-    color: "#38bdf8",
+    color: "#76e4f7",
     fontWeight: "800",
     textTransform: "uppercase"
   },
   tile: {
     alignItems: "center",
-    borderRadius: 12,
     borderWidth: 2,
-    height: 50,
     justifyContent: "center",
     padding: 3,
     position: "absolute",
-    width: 50
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 8
   },
   startTile: {
-    backgroundColor: "#164e63"
+    backgroundColor: "#0d3b4a"
   },
   propertyTile: {
-    backgroundColor: "#1e293b"
+    backgroundColor: "#121a27"
   },
   taxTile: {
-    backgroundColor: "#7f1d1d"
+    backgroundColor: "#4a1620"
   },
   bonusTile: {
-    backgroundColor: "#14532d"
+    backgroundColor: "#123821"
   },
   chanceTile: {
-    backgroundColor: "#581c87"
+    backgroundColor: "#2e1b4f"
   },
-  tileNumber: {
-    color: "#f8fafc",
-    fontSize: 9,
+  tileGlyph: {
+    color: "#f7fafc",
     fontWeight: "900"
   },
   tileName: {
-    color: "#cbd5e1",
-    fontSize: 8,
+    color: "#b8c2d4",
+    fontSize: 7,
     fontWeight: "700",
     textAlign: "center"
   },
   playerToken: {
-    borderColor: "#f8fafc",
-    borderRadius: 9,
+    borderColor: "#f7fafc",
     borderWidth: 2,
-    height: 18,
     position: "absolute",
-    width: 18
+    shadowColor: "#000",
+    shadowOpacity: 0.22,
+    shadowRadius: 5
   },
   actionsRow: {
     flexDirection: "row",
