@@ -4,6 +4,10 @@ Orbital Estates is a realtime multiplayer property-trading board game inspired b
 
 Players do not create accounts. The Expo React Native client creates a random device ID, stores it locally with `expo-secure-store`, and uses that device ID to create or rejoin games.
 
+## Demo
+
+Try the live project demo at <https://orbital-estatesmobile-production.up.railway.app/>.
+
 ## Tech stack
 
 - **Mobile/web client:** Expo + React Native + TypeScript
